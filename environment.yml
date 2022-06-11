@@ -1,4 +1,4 @@
-name: venv
+name: nuc
 channels:
   - conda-forge
   - defaults
