@@ -45,6 +45,8 @@ def get_hrrr(ragr:ApacheDir, target_day:int):
             and int(re.search(r"(?<=t)\d{2}(?=z)",url).group()) == 0 
             and int(re.search(r"\d{2}(?=.grib2)", url).group()) < 24
         )
+
+
     latests_run_saved=False
     for path in ragr.navto(PATH.format(model="hrrr")).iterdir():
         date = datetime.datetime.strptime(
@@ -84,6 +86,7 @@ def daily_download(
 
 
 if __name__ == "__main__":
-    x= daily_download(target_day=datetime.datetime.utcnow().day)
+    x = daily_download(target_day=datetime.datetime.utcnow().day)
     print(x)
-
+# 0 0 * * * cd $HOME/nuc-api && python3 -m app.events
+# cd $HOME/nuc-api && python3 -m app.events

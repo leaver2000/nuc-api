@@ -6,6 +6,7 @@ FROM continuumio/miniconda3 as build
 ARG TEMP_TAR=/tmp/env.tar
 
 COPY environment.yml .
+
 COPY app/ app/
 
 RUN conda update -n base -c defaults conda && \
@@ -25,6 +26,13 @@ RUN conda-pack -n venv -o $TEMP_TAR && \
 RUN /venv/bin/conda-unpack
 # Debian as the base image since the conda env also includes Python
 FROM debian:buster as runtime
+
+
+RUN apt-get update && apt-get -y install cron
+
+# Copy hello-cron file to the cron.d directory
+COPY --from=build daily-cron /etc/cron.d/daily-cron
+
 
 # Copy /venv from the previous stage:
 COPY --from=build /venv /venv

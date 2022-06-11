@@ -1,11 +1,10 @@
-## object:
-> deploy a minikube python fastapi application to run on a headless nuc.
-> automate web scraping, data extraction, and data preperation process 
-
+## objective:
+> deploy to minikube a containeriezed python - fastapi application to run on a headless nuc.
+> automate scraping data from the web, extraction, data preperation, and preprocessing
 
 ## Setting up the nuc:
 
-### installing some applications minikube and helm
+### installing minikube and helm
 
 - minikube
 
@@ -40,7 +39,7 @@ move `public_key` from the nuc into the `local/.ssh/authorized_keys`
 sudo usermod -aG sudo username
 ```
 
-### mount an external drive
+### mount an external drive to ubuntu
 
 ``` bash
 # I've attached an external 2tb HHD to the nuc that I want to mount
@@ -60,7 +59,40 @@ touch /media/external/data/test.txt
 
 rm /media/external/data/test.txt
 ```
-## Python
+
+### attach the volume to the container
+
+``` bash
+docker volume create data
+docker volume inspect data
+# [
+#     {
+#         "CreatedAt": "2022-06-11T20:39:25Z",
+#         "Driver": "local",
+#         "Labels": {},
+#         "Mountpoint": "/var/snap/docker/common/var-lib-docker/volumes/data/_data",
+#         "Name": "data",
+#         "Options": {},
+#         "Scope": "local"
+#     }
+# ]
+sudo mount /dev/sdb /var/snap/docker/common/var-lib-docker/volumes/data/_data
+ docker run -d \
+  --name devtest \
+  --mount source=data,target=/media/external \
+  leaver2000/nuc-api:1.0.0
+```
+
+## application
+
+the app should automaticly scrape data from the web 2 sources
+
+this is the predicted data
+https://nomads.ncep.noaa.gov/pub/data/
+this is the observed condition
+https://mrms.ncep.noaa.gov/data/ProbSevere/PROBSEVERE/
+
+### Python
 
 The environment used for this image was built with conda, miniconda specificly.  Because of some of the grib decoding requirements it's for the moment the easier solution. 
 
