@@ -77,10 +77,10 @@ docker volume inspect data
 #     }
 # ]
 sudo mount /dev/sdb /var/snap/docker/common/var-lib-docker/volumes/data/_data
- docker run -d \
-  --name devtest \
-  --mount source=data,target=/media/external \
-  leaver2000/nuc-api:1.0.0
+docker run -d \
+    --name nuc \
+    --mount source=data,target=/media/external \
+    leaver2000/nuc-api:1.0.0
 ```
 
 ## application
@@ -125,32 +125,26 @@ docker push leaver2000/nuc-api:1.0.0
 ```
 
 ### minikube
+
 ``` bash
 # start minikube
 minikube start
-kubectl apply -f api.yaml
-
+# deploy the config files
+kubectl apply -f ./.kube/api.yaml
+# display the config
+kubectl get pods -o wide
+# expose the deployment
+kubectl expose deployment nuc-api --type=NodePort --port=80
+# forward the minikube port
+kubectl port-forward service/nuc-api-svc 8080
 ```
 
 
-``` bash
-# start minikube
-minikube start
-# 
-kubectl apply -f ./.kube/api.yaml
-kubectl get pods -o wide
+### junk
 
-
-kubectl create deployment -api --image=nuc/api
-# kubectl apply -f ./.kube/deployment.yaml
-kubectl get pods -l run=nuc-api -o wide
-
-
+```
 # kubectl create deployment nuc-api --image=nuc/api
-
-
 # deployment.apps/nuc-api created
-kubectl expose deployment nuc-api --type=NodePort --port=80
 kubectl get services nuc-api
 # NAME      TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
 # nuc-api   NodePort   10.97.230.113   <none>        8080:31318/TCP   3m5s
