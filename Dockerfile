@@ -15,15 +15,15 @@ RUN conda update -n base -c defaults conda && \
 
 # install conda-pack
 
-# Use conda-pack to create a standalone enviornment in /venv:
-RUN conda-pack -n venv -o $TEMP_TAR && \
-    mkdir /venv && \
-    cd /venv && \
+# Use conda-pack to create a standalone enviornment in /nuc:
+RUN conda-pack -n nuc -o $TEMP_TAR && \
+    mkdir /nuc && \
+    cd /nuc && \
     tar xf $TEMP_TAR && \
     rm $TEMP_TAR 
 
-# put venv in same path it'll be in final image, so now fix up paths
-RUN /venv/bin/conda-unpack
+# put nuc in same path it'll be in final image, so now fix up paths
+RUN /nuc/bin/conda-unpack
 # Debian as the base image since the conda env also includes Python
 FROM debian:buster as runtime
 
@@ -31,14 +31,13 @@ FROM debian:buster as runtime
 RUN apt-get update && apt-get -y install cron
 
 # Copy hello-cron file to the cron.d directory
-COPY --from=build daily-cron /etc/cron.d/daily-cron
 
-
-# Copy /venv from the previous stage:
-COPY --from=build /venv /venv
+# Copy /nuc from the previous stage:
+COPY --from=build /nuc /nuc
 COPY --from=build /app /app
+COPY --from=build daily-cron /etc/cron.d/daily-cron
 # activate the 
-ENV PATH=/venv/bin:$PATH
+ENV PATH=/nuc/bin:$PATH
 
 
 # EXPOSE 80
