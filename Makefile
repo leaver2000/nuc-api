@@ -73,10 +73,29 @@ help:
 
 
 
+
+deploy:
+	@echo ""
+	@echo "    ${BLACK}:: ${RED}STARTING MINIKUBE${RESET} ${BLACK}::${RESET}"
+	@echo ""
+	minikube start
+	@echo ""
+	@echo "    ${BLACK}:: ${RED}APPLYING CONFIG${RESET} ${BLACK}::${RESET}"
+	@echo ""
+	minikube kubectl -- apply -f ./.kube
+	minikube kubectl -- get services nuc-api-svc
+	@echo ""
+	@echo "    ${BLACK}:: ${RED}EXPOSING PORT 8080${RESET} ${BLACK}::${RESET}"
+	@echo ""
+	minikube kubectl -- expose deployment nuc-api --type=NodePort --port=80
+	minikube kubectl -- port-forward service/nuc-api-svc 8080
+
 public.push:
 	git add . && \
 	git commit -m "making relase" && \
 	git push origin master
+
+
 
 
 public: public.push
