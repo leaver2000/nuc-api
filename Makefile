@@ -72,5 +72,11 @@ help:
 	@grep -E '^[a-zA-Z_0-9%-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "${TARGET_COLOR}%-30s${RESET} %s\n", $$1, $$2}'
 
 
+
+
+
+
 public:
-	git add . && git commit -m "making relase" && git push origin master
+	git add . && \
+	git commit -m "making relase" && \
+	git push origin master
