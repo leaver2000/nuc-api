@@ -2,6 +2,17 @@
 > deploy to minikube a containeriezed python - fastapi application to run on a headless nuc.
 > automate scraping data from the web, extraction, data preperation, and preprocessing
 
+## SETUP
+
+### WSL
+- (wsl-install)[https://docs.microsoft.com/en-us/windows/wsl/install]
+``` powershell
+wsl --install
+```
+
+
+
+
 ## Setting up the nuc:
 
 ### installing minikube and helm
@@ -103,7 +114,7 @@ data scraping flow
 > cron.event -> requests.get("nomads.ncep.noaa.gov/pub/data/...grib2") -> xarray.Dataset -> pandas.Dataframe -> parquet -> storage_volume/product-date.parquet
 
 accessing the data
-> requests.get("http://localhost:8080/nuc/product?from_valid_time=...&to_valid_time=...")  parquet -> pandas.Dataframe -> machine_learing
+> requests.get("http://localhost:8080/nuc/product?from_valid_time=...&to_valid_time=...")  parquet -> pandas.Dataframe -> machine_learing 
 
 
 
@@ -131,7 +142,7 @@ docker push leaver2000/nuc-api:1.0.0
 minikube start
 # deploy the config files
 kubectl apply -f ./.kube/api.yaml
-# display the config
+# display the pod config
 kubectl get pods -o wide
 # expose the deployment
 kubectl expose deployment nuc-api --type=NodePort --port=80
@@ -159,4 +170,67 @@ kubectl port-forward service/nuc-api 7080:80
 kubectl
 kubectl delete deployment nuc-api
 kubectl port-forward service/nuc-api-svc 8080
+```
+
+
+
+## contab
+
+scheudled events 
+
+
+The cron utility runs based on commands specified in a cron table (crontab). Each user, including root, can have a cron file. These files don't exist by default, but can be created in the /var/spool/cron directory using the crontab -e command that's also used to edit a cron file (see the script below). I strongly recommend that you not use a standard editor (such as Vi, Vim, Emacs, Nano, or any of the many other editors that are available). Using the crontab command not only allows you to edit the command, it also restarts the crond daemon when you save and exit the editor. The crontab command uses Vi as its underlying editor, because Vi is always present (on even the most basic of installations).
+
+New cron files are empty, so commands must be added from scratch. I added the job definition example below to my own cron files, just as a quick reference, so I know what the various parts of a command mean. Feel free to copy it for your own use.
+
+
+``` bash
+
+# crontab -e
+SHELL=/bin/bash
+MAILTO=root@example.com
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
+
+# For details see man 4 crontabs
+
+# Example of job definition:
+# .---------------- minute (0 - 59)
+# |  .------------- hour (0 - 23)
+# |  |  .---------- day of month (1 - 31)
+# |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
+# |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
+# |  |  |  |  |
+# *  *  *  *  * user-name  command to be executed
+
+# backup using the rsbu program to the internal 4TB HDD and then 4TB external
+01 01 * * * /usr/local/bin/rsbu -vbd1 ; /usr/local/bin/rsbu -vbd2
+
+# Set the hardware clock to keep it in sync with the more accurate system clock
+03 05 * * * /sbin/hwclock --systohc
+
+# Perform monthly updates on the first of the month
+# 25 04 1 * * /usr/bin/dnf -y update
+```
+
+``` yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hello
+spec:
+  schedule: "* * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: hello
+            image: busybox:1.28
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - date; echo Hello from the Kubernetes cluster
+          restartPolicy: OnFailure
+
 ```

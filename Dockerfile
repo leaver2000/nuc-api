@@ -14,8 +14,6 @@ RUN conda update -n base -c defaults conda && \
     conda env create -f environment.yml && \
     conda install -c conda-forge conda-pack
 
-# install conda-pack
-
 # Use conda-pack to create a standalone enviornment in /nuc:
 RUN conda-pack -n nuc -o $TEMP_TAR && \
     mkdir /nuc && \

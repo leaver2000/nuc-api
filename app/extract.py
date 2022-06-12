@@ -89,7 +89,7 @@ class ApacheDir(ApacheNode):
         (child,) = islice(self.children(), index, index + 1)
         return child
 
-    def iterfiles(self, condition:Callable[[str],bool]=None)-> Iterator["ApacheFile"]:
+    def iterfiles(self, condition:Callable[[str],bool]=None)-> Iterator[ApacheFile]:
         for node in self.children():
             if isinstance(node, ApacheFile):
                 if not condition:
