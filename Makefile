@@ -73,10 +73,11 @@ help:
 
 
 
-
-
-
-public:
+public.push:
 	git add . && \
 	git commit -m "making relase" && \
 	git push origin master
+
+
+public: public.push
+	echo DONE
