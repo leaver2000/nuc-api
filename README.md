@@ -122,12 +122,26 @@ accessing the data
 
 ### build/run commands
 <!-- https://github.com/4OH4/kubernetes-fastapi -->
+
+
+
 ``` bash
 # local
 uvicorn app.main:app --reload
-# local-container
+# image
 docker build -t leaver2000/nuc-api:1.0.0 .
-docker run -p 8080:8080 --name nuc-api leaver2000/nuc-api:1.0.0
+# container
+docker run -p 0.0.0.0:8080:8080 --name nuc-api leaver2000/nuc-api:1.0.0
+# network
+docker network create nuc-net
+# bridge
+docker create --name nuc \
+  --network nuc-net \
+  --publish 8080:80 \
+  leaver2000/nuc-api:1.0.0
+
+
+docker network connect nuc-net nuc
 # push the image to docker hub
 docker login
 # Username: ...
@@ -136,6 +150,17 @@ docker push leaver2000/nuc-api:1.0.0
 ```
 
 ### minikube
+``` bash
+minikube start
+minikube kubectl -- apply -f .kube
+minikube kubectl -- get deployment -w
+# NAME      READY   UP-TO-DATE   AVAILABLE   AGE
+# nuc-api   0/1     1            0           31s
+# nuc-api   1/1     1            1           33s
+minikube kubectl -- port-forward service/nuc-api-svc 8080
+```
+
+
 
 ``` bash
 # start minikube
@@ -145,7 +170,7 @@ kubectl apply -f ./.kube/api.yaml
 # display the pod config
 kubectl get pods -o wide
 # expose the deployment
-kubectl expose deployment nuc-api --type=NodePort --port=80
+kubectl expose deployment nuc-api --type=NodePort --port=8080
 # forward the minikube port
 kubectl port-forward service/nuc-api-svc 8080
 ```

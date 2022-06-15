@@ -6,9 +6,6 @@ FROM continuumio/miniconda3 as build
 ARG TEMP_TAR=/tmp/env.tar
 
 COPY . .
-# COPY environment.yml .
-# COPY daily-cron .
-# COPY app/ app/
 
 RUN conda update -n base -c defaults conda && \
     conda env create -f environment.yml && \

@@ -72,6 +72,21 @@ help:
 	@grep -E '^[a-zA-Z_0-9%-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "${TARGET_COLOR}%-30s${RESET} %s\n", $$1, $$2}'
 
 
+deploy:
+	@echo ""
+	@echo "    ${BLACK}:: ${RED}STARTING MINIKUBE${RESET} ${BLACK}::${RESET}"
+	@echo ""
+	minikube start
+	@echo ""
+	@echo "    ${BLACK}:: ${RED}APPLYING CONFIG${RESET} ${BLACK}::${RESET}"
+	@echo ""
+	minikube kubectl -- apply -f ./.kube
+	minikube kubectl -- get services nuc-api-svc
+	@echo ""
+	@echo "    ${BLACK}:: ${RED}EXPOSING PORT 8080${RESET} ${BLACK}::${RESET}"
+	@echo ""
+	minikube kubectl -- expose deployment nuc-api --type=NodePort --port=8080
+	minikube kubectl -- port-forward service/nuc-api-svc 8080
 
 public.push:
 	git add . && \
