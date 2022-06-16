@@ -96,3 +96,14 @@ public.push:
 
 public: public.push
 	echo DONE
+
+
+run:
+	docker run -p 8080:8080 --name nuc-container leaver2000/nuc-api
+
+
+build:
+	docker build -t leaver2000/nuc-api .
+
+server:
+	uvicorn app.main:app --port 7000 --reload

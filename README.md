@@ -1,261 +1,197 @@
-## objective:
-> deploy to minikube a containeriezed python - fastapi application to run on a headless nuc.
-> automate scraping data from the web, extraction, data preperation, and preprocessing
 
-## SETUP
+# installing Ubuntu 22.04 LTS (GNU/Linux 5.15.0-37-generic x86_64)
 
-### WSL
-- (wsl-install)[https://docs.microsoft.com/en-us/windows/wsl/install]
-``` powershell
-wsl --install
+prerequisites
+
+download https://ubuntu.com/download/server to a thumbdrive
+
+install Ubuntu on the NUC and connect to local network.
+
+installing some utility packages 
+
+``` bash
+#enabling ssh
+leaver2000@nuc:~$ sudo apt update
+leaver2000@nuc:~$ sudo apt install openssh-server net-tools
+# verify
+leaver2000@nuc:~$ sudo systemctl status ssh
+# allow ssh connections
+leaver2000@nuc:~$ sudo ufw allow ssh
+# 
+leaver2000@nuc:~$ ifconfig
+# docker0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
+#         inet 172.17.0.1  netmask 255.255.0.0  broadcast 172.17.255.255
+#         ether 02:42:27:07:f0:83  txqueuelen 0  (Ethernet)
+#         RX packets 0  bytes 0 (0.0 B)
+#         RX errors 0  dropped 0  overruns 0  frame 0
+#         TX packets 0  bytes 0 (0.0 B)
+#         TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+# eno1: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
+#         ether d4:5d:df:13:72:04  txqueuelen 1000  (Ethernet)
+#         RX packets 0  bytes 0 (0.0 B)
+#         RX errors 0  dropped 0  overruns 0  frame 0
+#         TX packets 0  bytes 0 (0.0 B)
+#         TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+#         device interrupt 16  memory 0xdf100000-df120000  
+
+# lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
+#         inet 127.0.0.1  netmask 255.0.0.0
+#         inet6 ::1  prefixlen 128  scopeid 0x10<host>
+#         loop  txqueuelen 1000  (Local Loopback)
+#         RX packets 1425  bytes 1191386 (1.1 MB)
+#         RX errors 0  dropped 0  overruns 0  frame 0
+#         TX packets 1425  bytes 1191386 (1.1 MB)
+#         TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+# wlp1s0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+# ------> inet 192.168.1.157  netmask 255.255.255.0  broadcast 192.168.1.255
+#         inet6 2600:1700:a7d4:5810:d66d:6dff:feb0:d60f  prefixlen 64  scopeid 0x0<global>
+#         inet6 2600:1700:a7d4:5810::36  prefixlen 128  scopeid 0x0<global>
+#         inet6 fe80::d66d:6dff:feb0:d60f  prefixlen 64  scopeid 0x20<link>
+#         ether d4:6d:6d:b0:d6:0f  txqueuelen 1000  (Ethernet)
+#         RX packets 53003  bytes 63495486 (63.4 MB)
+#         RX errors 0  dropped 3330  overruns 0  frame 0
+#         TX packets 4165  bytes 1167992 (1.1 MB)
+#         TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+```
+from the localmachine
+
+
+``` bash
+leaver2000@inwin:~$ ssh leaver2000@192.168.1.157
+# Welcome to Ubuntu 22.04 LTS (GNU/Linux 5.15.0-37-generic x86_64)
+
+#  * Documentation:  https://help.ubuntu.com
+#  * Management:     https://landscape.canonical.com
+#  * Support:        https://ubuntu.com/advantage
+
+#   System information as of Wed Jun 15 01:20:46 AM UTC 2022
+
+#   System load:              0.0
+#   Usage of /:               20.6% of 53.21GB
+#   Memory usage:             1%
+#   Swap usage:               0%
+#   Temperature:              52.0 C
+#   Processes:                154
+#   Users logged in:          1
+#   IPv4 address for docker0: 172.17.0.1
+#   IPv4 address for wlp1s0:  192.168.1.157
+#   IPv6 address for wlp1s0:  2600:1700:a7d4:5810::36
+#   IPv6 address for wlp1s0:  2600:1700:a7d4:5810:d66d:6dff:feb0:d60f
+
+
+# 0 updates can be applied immediately.
+leaver2000@nuc:~$ 
+```
+from here I also did some `ssh-keygen` stuff to allow me to access the NUC without the use of a password each time.
+
+
+
+## setting up nginx on the NUC
+
+
+setting up a webserver on Intel NUC for access on my local network
+
+``` bash
+leaver2000@nuc:~$ sudo apt update
+leaver2000@nuc:~$ sudo apt install nginx
+leaver2000@nuc:~$ sudo ufw enable
+leaver2000@nuc:~$ sudo ufw app list
+# Output
+# Available applications:
+#   Nginx Full
+#   Nginx HTTP
+#   Nginx HTTPS
+#   OpenSSH
+leaver2000@nuc:~$ sudo ufw allow 'Nginx HTTP'
+leaver2000@nuc:~$ sudo ufw status
+
+# Output
+# Status: active
+
+# To                         Action      From
+# --                         ------      ----
+# OpenSSH                    ALLOW       Anywhere                  
+# Nginx HTTP                 ALLOW       Anywhere                  
+# OpenSSH (v6)               ALLOW       Anywhere (v6)             
+# Nginx HTTP (v6)            ALLOW       Anywhere (v6)
 ```
 
 
-
-
-## Setting up the nuc:
-
-### installing minikube and helm
-
-- minikube
+from the local machine there is no service running on localhost
 
 ``` bash
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-sudo install minikube-linux-amd64 /usr/local/bin/minikube
+leaver2000@inwin:~$ curl localhost
+# curl: (7) Failed to connect to localhost port 80 after 0 ms: Connection refused
 ```
 
-- helm
+from the NUC
 
 ``` bash
-https://get.helm.sh/helm-v3.9.0-linux-amd64.tar.gz
-tar -zxvf helm-v3.0.0-linux-amd64.tar.gz
-mv linux-amd64/helm /usr/local/bin/helm
-```
-
-
-### connect to the nuc via SSH
-
-Note there is some configuration with ubuntu-server to enable ssh that has to be accomplished
-
-With VS Code you can create a remote connection va SSH `username@target`
-
-each time you connect it will prompt you for a password, which is kind of annoying
-
-on the nuc run `ssh-keygen`
-
-move `public_key` from the nuc into the `local/.ssh/authorized_keys` 
-
-``` bash
-# sudo permission to user
-sudo usermod -aG sudo username
-```
-
-### mount an external drive to ubuntu
-
-``` bash
-# I've attached an external 2tb HHD to the nuc that I want to mount
-# list the disks on the nuc
-sudo fdisk -l
-# Disk /dev/sdb: 1.82 TiB, 2000398929920 bytes, 488378645 sectors
-# Disk model: Expansion Desk  
-
-# create a directory to mount the drive
-sudo mkdir /media/external/data
-# change the permissions to the directory
-sudo chmod 777 /media/external/data
-# mount the drive
-sudo mount /dev/sdb /media/external/data
-# run a test
-touch /media/external/data/test.txt
-
-rm /media/external/data/test.txt
-```
-
-### attach the volume to the container
-
-``` bash
-docker volume create data
-docker volume inspect data
-# [
-#     {
-#         "CreatedAt": "2022-06-11T20:39:25Z",
-#         "Driver": "local",
-#         "Labels": {},
-#         "Mountpoint": "/var/snap/docker/common/var-lib-docker/volumes/data/_data",
-#         "Name": "data",
-#         "Options": {},
-#         "Scope": "local"
+leaver2000@nuc:~$ curl localhost
+# <!DOCTYPE html>
+# <html>
+# <head>
+# <title>Welcome to nginx!</title>
+# <style>
+#     body {
+#         width: 35em;
+#         margin: 0 auto;
+#         font-family: Tahoma, Verdana, Arial, sans-serif;
 #     }
-# ]
-sudo mount /dev/sdb /var/snap/docker/common/var-lib-docker/volumes/data/_data
-docker run -d \
-    --name nuc \
-    --mount source=data,target=/media/external \
-    leaver2000/nuc-api:1.0.0
+# </style>
+# </head>
+# <body>
+# <h1>Welcome to nginx!</h1>
+# <p>If you see this page, the nginx web server is successfully installed and
+# working. Further configuration is required.</p>
+
+# <p>For online documentation and support please refer to
+# <a href="http://nginx.org/">nginx.org</a>.<br/>
+# Commercial support is available at
+# <a href="http://nginx.com/">nginx.com</a>.</p>
+
+# <p><em>Thank you for using nginx.</em></p>
+# </body>
+# </html>
 ```
 
-## application
 
-the app should automaticly scrape data from the web 2 sources
-
-this is the predicted data
-https://nomads.ncep.noaa.gov/pub/data/
-this is the observed condition
-https://mrms.ncep.noaa.gov/data/ProbSevere/PROBSEVERE/
-
-### Python
-
-The environment used for this image was built with conda, miniconda specificly.  Because of some of the grib decoding requirements it's for the moment the easier solution. 
-
-environment: numpy pandas fastapi requests xarray[pyino] pyarrow 
-environment-dev: environment + black plint pytest  
-
-data scraping flow
-> cron.event -> requests.get("nomads.ncep.noaa.gov/pub/data/...grib2") -> xarray.Dataset -> pandas.Dataframe -> parquet -> storage_volume/product-date.parquet
-
-accessing the data
-> requests.get("http://localhost:8080/nuc/product?from_valid_time=...&to_valid_time=...")  parquet -> pandas.Dataframe -> machine_learing 
-
-
-
-## Code Deployment
-
-### build/run commands
-<!-- https://github.com/4OH4/kubernetes-fastapi -->
-
+back to the localmachine
 
 
 ``` bash
-# local
-uvicorn app.main:app --reload
-# image
-docker build -t leaver2000/nuc-api:1.0.0 .
-# container
-docker run -p 0.0.0.0:8080:8080 --name nuc-api leaver2000/nuc-api:1.0.0
-# network
-docker network create nuc-net
-# bridge
-docker create --name nuc \
-  --network nuc-net \
-  --publish 8080:80 \
-  leaver2000/nuc-api:1.0.0
+leaver2000@inwin:~/nuc-api$ curl 192.168.1.157
+# <!DOCTYPE html>
+# <html>
+# <head>
+# <title>Welcome to nginx!</title>
+# <style>
+#     body {
+#         width: 35em;
+#         margin: 0 auto;
+#         font-family: Tahoma, Verdana, Arial, sans-serif;
+#     }
+# </style>
+# </head>
+# <body>
+# <h1>Welcome to nginx!</h1>
+# <p>If you see this page, the nginx web server is successfully installed and
+# working. Further configuration is required.</p>
 
+# <p>For online documentation and support please refer to
+# <a href="http://nginx.org/">nginx.org</a>.<br/>
+# Commercial support is available at
+# <a href="http://nginx.com/">nginx.com</a>.</p>
 
-docker network connect nuc-net nuc
-# push the image to docker hub
-docker login
-# Username: ...
-# Password: ...
-docker push leaver2000/nuc-api:1.0.0
-```
-
-### minikube
-``` bash
-minikube start
-minikube kubectl -- apply -f .kube
-minikube kubectl -- get deployment -w
-# NAME      READY   UP-TO-DATE   AVAILABLE   AGE
-# nuc-api   0/1     1            0           31s
-# nuc-api   1/1     1            1           33s
-minikube kubectl -- port-forward service/nuc-api-svc 8080
-```
-
-
-
-``` bash
-# start minikube
-minikube start
-# deploy the config files
-kubectl apply -f ./.kube/api.yaml
-# display the pod config
-kubectl get pods -o wide
-# expose the deployment
-kubectl expose deployment nuc-api --type=NodePort --port=8080
-# forward the minikube port
-kubectl port-forward service/nuc-api-svc 8080
-```
-
-
-### junk
+# <p><em>Thank you for using nginx.</em></p>
+# </body>
+# </html>
 
 ```
-# kubectl create deployment nuc-api --image=nuc/api
-# deployment.apps/nuc-api created
-kubectl get services nuc-api
-# NAME      TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
-# nuc-api   NodePort   10.97.230.113   <none>        8080:31318/TCP   3m5s
-minikube service nuc-api
-kubectl port-forward service/nuc-api 7080:80
-```
-
-
-### minikube
-
-```
-kubectl
-kubectl delete deployment nuc-api
-kubectl port-forward service/nuc-api-svc 8080
-```
 
 
 
-## contab
-
-scheudled events 
-
-
-The cron utility runs based on commands specified in a cron table (crontab). Each user, including root, can have a cron file. These files don't exist by default, but can be created in the /var/spool/cron directory using the crontab -e command that's also used to edit a cron file (see the script below). I strongly recommend that you not use a standard editor (such as Vi, Vim, Emacs, Nano, or any of the many other editors that are available). Using the crontab command not only allows you to edit the command, it also restarts the crond daemon when you save and exit the editor. The crontab command uses Vi as its underlying editor, because Vi is always present (on even the most basic of installations).
-
-New cron files are empty, so commands must be added from scratch. I added the job definition example below to my own cron files, just as a quick reference, so I know what the various parts of a command mean. Feel free to copy it for your own use.
-
-
-``` bash
-
-# crontab -e
-SHELL=/bin/bash
-MAILTO=root@example.com
-PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
-
-# For details see man 4 crontabs
-
-# Example of job definition:
-# .---------------- minute (0 - 59)
-# |  .------------- hour (0 - 23)
-# |  |  .---------- day of month (1 - 31)
-# |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...
-# |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat
-# |  |  |  |  |
-# *  *  *  *  * user-name  command to be executed
-
-# backup using the rsbu program to the internal 4TB HDD and then 4TB external
-01 01 * * * /usr/local/bin/rsbu -vbd1 ; /usr/local/bin/rsbu -vbd2
-
-# Set the hardware clock to keep it in sync with the more accurate system clock
-03 05 * * * /sbin/hwclock --systohc
-
-# Perform monthly updates on the first of the month
-# 25 04 1 * * /usr/bin/dnf -y update
-```
-
-``` yaml
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: hello
-spec:
-  schedule: "* * * * *"
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          containers:
-          - name: hello
-            image: busybox:1.28
-            imagePullPolicy: IfNotPresent
-            command:
-            - /bin/sh
-            - -c
-            - date; echo Hello from the Kubernetes cluster
-          restartPolicy: OnFailure
-
-```
+## nextsteps are to use nginx to reverse proxy http request to a docker container
