@@ -1,27 +1,44 @@
 
-import os
+from datetime import datetime
 
-import os
-from pathlib import Path
+from requests import Session
 from fastapi import FastAPI,Request
-from fastapi_utils.tasks import repeat_every
-from app import cronjob
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 
-cron_path = Path(os.getcwd(), "app", "cron.log")
+from app.extract import fetch, ApacheDir, tomorrow
 
 
+scheduler = BackgroundScheduler()
 
 app = FastAPI()
+class Cache:
+    def __init__(self):
+        self._state = {}
+    
+    def __repr__(self) -> str:
+        return self.__class__.__name__+"({0})".format(" ".join(f"{k}={v}"for k, v in self.state.items()) )
+        
+    @property
+    def state(self):
+        return self._state
+        
+    def set_state(self, state:dict):
+        self._state= state
+
+
+cache = Cache()        
+
 
 @app.on_event("startup")
-@repeat_every(seconds=60)  # 1 hour
-def remove_expired_tokens_task() -> None:
-    cronjob.do_cron()
-    # with sessionmaker.context_session() as db:
+def startup() -> None:
+    scheduler.start()
+
+@app.on_event("shutdown")
+def shutdown() -> None:
+    scheduler.shutdown()
 
         
-        
-    #     remove_expired_tokens(db=db)
 @app.get("/")
 def health():
     return {"Hello": "World"}
@@ -31,10 +48,18 @@ def headers(request:Request):
     return request.headers
 
 
-@app.get("/cron")
-def cron():
-    with cron_path.open("rt") as cron:
-        return {"cron_state": cron.read().split("\n")}
-import pandas as pd
 
-pd.concat()
+
+
+@scheduler.scheduled_job(IntervalTrigger(seconds=10, start_date=tomorrow(), timezone="utc"))
+def on_newday():
+    target_day =datetime.utcnow().day
+
+    with Session() as session:
+        ragr = ApacheDir(session, url="https://nomads.ncep.noaa.gov/pub/data")
+        cache.set_state({
+            "557ww":fetch.galwem(ragr, target_day),
+            "hrrr":fetch.hrrr(ragr, target_day)
+            })
+    
+
