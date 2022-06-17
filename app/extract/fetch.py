@@ -1,20 +1,16 @@
-
-import datetime
 import re
-
-from requests import Session
-
-from .extract import ApacheDir
+from datetime import datetime
+from app.extract._extract import ApacheDir
 
 
 class NotAvaliable(Exception):
     ...
 
-PATH = "nccf/com/{model}/prod/"
+NCCF_PATH = "nccf/com/{model}/prod/"
 
-def get_557ww(ragr:ApacheDir, target_day:int)->bool:
+def galwem(ragr:ApacheDir, target_day:int)->bool:
     latests_run_saved=False
-    for path in ragr.navto(PATH.format(model="557ww")).iterdir():
+    for path in ragr.navto(NCCF_PATH.format(model="557ww")).iterdir():
         date = datetime.datetime.strptime(
             re.search(r"\d+/$", path.url).group(), "%Y%m%d/"
         )
@@ -35,7 +31,7 @@ def get_557ww(ragr:ApacheDir, target_day:int)->bool:
     return latests_run_saved
 
 
-def get_hrrr(ragr:ApacheDir, target_day:int):
+def hrrr(ragr:ApacheDir, target_day:int):
 
     
     def file_condition(url:str):
@@ -48,8 +44,8 @@ def get_hrrr(ragr:ApacheDir, target_day:int):
 
 
     latests_run_saved=False
-    for path in ragr.navto(PATH.format(model="hrrr")).iterdir():
-        date = datetime.datetime.strptime(
+    for path in ragr.navto(NCCF_PATH.format(model="hrrr")).iterdir():
+        date = datetime.strptime(
             re.search(r"\d+/$", path.url).group(), "%Y%m%d/"
         )
         if date.day == target_day:
@@ -71,22 +67,3 @@ def get_hrrr(ragr:ApacheDir, target_day:int):
                 # #     print("hrrr")
 
     return latests_run_saved
-def daily_download(
-    target_day=int,
-) -> None:
-
-    with Session() as session:
-        ragr = ApacheDir(session, url="https://nomads.ncep.noaa.gov/pub/data")
-
-        return {
-            "557ww":get_557ww(ragr, target_day),
-            "hrrr":get_hrrr(ragr, target_day)
-            }
-
-
-
-if __name__ == "__main__":
-    x = daily_download(target_day=datetime.datetime.utcnow().day)
-    print(x)
-# 0 0 * * * cd $HOME/nuc-api && python3 -m app.events
-# cd $HOME/nuc-api && python3 -m app.events
